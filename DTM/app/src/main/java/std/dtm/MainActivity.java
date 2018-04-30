@@ -1,31 +1,40 @@
 /*
 Author: Sam Alston, Tom Murphy, Jack (Daniel) Kinne [STD]
-Last Modified: 4/15/2018
+Last Modified: 4/30/2018
 Purpose: MainActivity is the main menu for the DTM application
     DTM is the Don't Tell Me game where you pose a question about a movie, the app finds it for you and presents clues
     Reclaim your outsourced memory, ask, don't tell me.
 
-    PLAY! button launches AskQuestion
+    'Movie' button launches AskQuestion
  */
 package std.dtm;
 
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    //launch Ask question when you play
-    private Button playButton;
+    //launch Ask question when you click a play button (movies)
+    private ImageButton playButtonMovies;
+    private ImageButton playButtonTV;
+    private ImageButton playButtonVG;
+    private ImageButton playButtonBooks;
+    private ImageButton howToButton;
+    private ImageButton leaderboardsButton;
     private ImageButton settingsButton;
     private TextView displayTextView;
     public static GameSettings settings;
@@ -45,12 +54,33 @@ public class MainActivity extends AppCompatActivity {
         displayTextView = (TextView) findViewById(R.id.displaytextview);
         displayTextView.setText(user.getDisplayString());
 
-        playButton = (Button) findViewById(R.id.playbutton);
-        settingsButton = (ImageButton) findViewById(R.id.settingsbutton);
+        playButtonMovies = (ImageButton) findViewById(R.id.playButtonMovies);
+        playButtonTV = (ImageButton) findViewById(R.id.playButtonTV);
+        playButtonVG = (ImageButton) findViewById(R.id.playButtonVG);
+        playButtonBooks = (ImageButton) findViewById(R.id.playButtonBooks);
+        howToButton = (ImageButton) findViewById(R.id.howtoButton);
+        leaderboardsButton = (ImageButton) findViewById(R.id.leaderboardButton);
+        settingsButton = (ImageButton) findViewById(R.id.settingsButton);
 
-        playButton.setOnClickListener(new View.OnClickListener() {
+        playButtonMovies.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v){
                 checkPermission();
+            }
+        });
+
+        //highlight effects
+        playButtonMovies.setOnTouchListener(new HighlightOnTouchListener(playButtonMovies));
+        playButtonTV.setOnTouchListener(new HighlightOnTouchListener(playButtonTV));
+        playButtonVG.setOnTouchListener(new HighlightOnTouchListener(playButtonVG));
+        playButtonBooks.setOnTouchListener(new HighlightOnTouchListener(playButtonBooks));
+        howToButton.setOnTouchListener(new HighlightOnTouchListener(howToButton));
+        leaderboardsButton.setOnTouchListener(new HighlightOnTouchListener(leaderboardsButton));
+        settingsButton.setOnTouchListener(new HighlightOnTouchListener(settingsButton));
+
+        howToButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goToHowTo();
             }
         });
 
@@ -71,6 +101,11 @@ public class MainActivity extends AppCompatActivity {
         Intent askQuestionIntent = new Intent(this, AskQuestion.class);
         startActivity(askQuestionIntent);
 
+    }
+
+    private void goToHowTo(){
+        Intent settingsIntent = new Intent(this, HowToPlay.class);
+        startActivity(settingsIntent);
     }
 
     //before we launch, check we have permissions.
@@ -120,7 +155,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
 }//end mainactivity
 
 //store settings information for the play session
@@ -187,4 +221,49 @@ class User{
     public void addBalance(int earned) {
         bankBalance+= earned;
     }
+}
+
+//highlight imagebuttons on touch, as per https://stackoverflow.com/users/891479/l-g
+//more @: https://stackoverflow.com/questions/4131656/how-to-make-button-highlight/14278790#14278790
+class HighlightOnTouchListener implements View.OnTouchListener {
+
+    private static final int TRANSPARENT_GREY = Color.argb(0, 111, 111, 111);
+    private static final int FILTERED_GREY = Color.argb(155, 111, 111, 111);
+
+    ImageView imageView;
+    TextView textView;
+
+    public HighlightOnTouchListener(final ImageView imageView) {
+        super();
+        this.imageView = imageView;
+    }
+
+    public HighlightOnTouchListener(final TextView textView) {
+        super();
+        this.textView = textView;
+    }
+
+    public boolean onTouch(final View view, final MotionEvent motionEvent) {
+        if (imageView != null) {
+            if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                imageView.setColorFilter(FILTERED_GREY);
+            } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                imageView.setColorFilter(TRANSPARENT_GREY); // or null
+            }
+        } else {
+            for (final Drawable compoundDrawable : textView.getCompoundDrawables()) {
+                if (compoundDrawable != null) {
+                    if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                        // we use PorterDuff.Mode. SRC_ATOP as our filter color is already transparent
+                        // we should have use PorterDuff.Mode.LIGHTEN with a non transparent color
+                        compoundDrawable.setColorFilter(FILTERED_GREY, PorterDuff.Mode.SRC_ATOP);
+                    } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                        compoundDrawable.setColorFilter(TRANSPARENT_GREY, PorterDuff.Mode.SRC_ATOP); // or null
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
 }
